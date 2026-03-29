@@ -139,13 +139,7 @@ if __name__ == '__main__':
     print("=" * 50)
     print("🚀 FlipInsight Backend Server Starting...")
     print("=" * 50)
-    print("📍 Server running at: http://localhost:5000")
-    print("📡 API endpoints:")
-    print("   POST /api/upload - Upload data file")
-    print("   POST /api/ask - Ask questions about data")
-    print("   GET  /api/insights - Get all insights")
-    print("   GET  /api/health - Health check")
-    print("=" * 50)
-    print("✅ Ready to accept connections!")
-    print("=" * 50)
-    app.run(debug=True, port=5000, threaded=True)
+
+    port = int(os.environ.get("PORT", 5000))
+
+    app.run(host="0.0.0.0", port=port, debug=False)

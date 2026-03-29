@@ -1,6 +1,5 @@
 // API Configuration
-const API_URL = 'http://localhost:5000/api';
-
+const API_URL = 'https://practicing-1.onrender.com/api';
 // Global variables
 let currentData = null;
 let productChart = null;
