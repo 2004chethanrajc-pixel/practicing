@@ -198,7 +198,7 @@ function displayDashboard(data) {
             const supportPct = (rule.support * 100).toFixed(2);
             const confA = (rule.confidence_a_to_b * 100).toFixed(2);
             const confB = (rule.confidence_b_to_a * 100).toFixed(2);
-            metrics.innerHTML = `<span>Count: ${rule.count}</span><span>Support: ${supportPct}%</span><span>A→B: ${confA}%</span><span>B→A: ${confB}%</span>`;
+            metrics.innerText = `When customers buy ${rule.product_a}, they also buy ${rule.product_b} (${rule.count} transactions, support ${supportPct}%). A→B ${confA}%, B→A ${confB}%.`;
 
             row.appendChild(names);
             row.appendChild(metrics);
@@ -224,8 +224,8 @@ function displayDashboard(data) {
                 metrics.innerHTML = '<span>No sub products</span>';
             } else {
                 metrics.innerHTML = list
-                    .map(item => `${item.product} (count: ${item.count})`)
-                    .join(' | ');
+                    .map(item => `Customers who bought ${product} also bought ${item.product} in ${item.count} transactions.`)
+                    .join(' ');
             }
             row.appendChild(name);
             row.appendChild(metrics);

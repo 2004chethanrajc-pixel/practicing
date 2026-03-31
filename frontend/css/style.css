@@ -299,6 +299,13 @@ body {
     font-size: 14px;
 }
 
+.section-note {
+    margin-top: 6px;
+    color: rgba(154, 164, 178, 0.9);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
 .section-title {
     margin-bottom: 6px;
 }
@@ -565,6 +572,12 @@ body {
     flex-wrap: wrap;
     color: var(--muted);
     font-size: 12px;
+}
+
+.pair-row .pair-explain {
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
 }
 
 .model-card {
