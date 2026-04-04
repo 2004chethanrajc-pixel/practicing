@@ -230,14 +230,14 @@ class FlipInsightAnalyzer:
             low_rated = df[df['rating'] < 3.0]
             if len(low_rated) > 0:
                 recommendations.append(
-                    f"⚠️ {len(low_rated)} products have low ratings (<3.0). Improve quality, listings, or consider discontinuation."
+                    f"{len(low_rated)} products have low ratings (<3.0). Improve quality, listings, or consider discontinuation."
                 )
         
         if 'discount_percentage' in df.columns and 'rating' in df.columns:
             high_discount_low_rating = df[(df['discount_percentage'] > 30) & (df['rating'] < 3.5)]
             if len(high_discount_low_rating) > 0:
                 recommendations.append(
-                    f"📊 {len(high_discount_low_rating)} products have high discount but low rating. Review quality or positioning."
+                    f"{len(high_discount_low_rating)} products have high discount but low rating. Review quality or positioning."
                 )
         
         price_col = 'price' if 'price' in df.columns else ('selling_price' if 'selling_price' in df.columns else None)
@@ -246,22 +246,22 @@ class FlipInsightAnalyzer:
             if len(high_rating_products) > 0:
                 optimal_price = high_rating_products[price_col].median()
                 recommendations.append(
-                    f"💰 Price anchor: high-rated products cluster around ₹{optimal_price:,.0f}. Keep new launches near this band."
+                    f"Price anchor: high-rated products cluster around ₹{optimal_price:,.0f}. Keep new launches near this band."
                 )
         
         if 'category' in df.columns and 'rating' in df.columns:
             best_category = df.groupby('category')['rating'].mean().idxmax()
             worst_category = df.groupby('category')['rating'].mean().idxmin()
-            recommendations.append(f"🏆 Best performing category: {best_category}")
-            recommendations.append(f"📉 Category needing improvement: {worst_category}")
+            recommendations.append(f"Best performing category: {best_category}")
+            recommendations.append(f"Category needing improvement: {worst_category}")
 
         if sales_basis != 'unavailable':
             recommendations.append(
-                f"📈 Top sellers are based on {sales_basis}. Use these items for bundles, ads, and cross-sell placement."
+                f"Top sellers are based on {sales_basis}. Use these items for bundles, ads, and cross-sell placement."
             )
         
         if not recommendations:
-            recommendations.append("✅ Your data looks good! Upload more data for detailed insights.")
+            recommendations.append("Your data looks good! Upload more data for detailed insights.")
         
         return recommendations
 
@@ -287,47 +287,47 @@ class FlipInsightAnalyzer:
 
         # Concept explanations
         if 'what is market basket' in question_lower:
-            return "🧺 Market basket means products people buy together in one order."
+            return "Market basket means products people buy together in one order."
         if 'what is association rule' in question_lower:
-            return "🔗 Association rules are simple links that show which products are often bought together."
+            return "Association rules are simple links that show which products are often bought together."
         if 'what is sales volume' in question_lower:
-            return "📦 Sales volume means how many units of a product are sold."
+            return "Sales volume means how many units of a product are sold."
         if 'how do you decide top sellers' in question_lower:
-            return "🏆 Top sellers are chosen by the strongest sales signal available (sales volume or review count)."
+            return "Top sellers are chosen by the strongest sales signal available (sales volume or review count)."
         if 'how do you calculate profit' in question_lower:
-            return "💰 Profit is selling price minus cost price, multiplied by quantity sold."
+            return "Profit is selling price minus cost price, multiplied by quantity sold."
         if 'what is a category' in question_lower:
-            return "🗂️ A category is a group of similar products, like Electronics or Shoes."
+            return "A category is a group of similar products, like Electronics or Shoes."
         if 'what is average price' in question_lower:
             if 'price' in self.df.columns:
-                return f"💰 Average price is ₹{self.df['price'].mean():,.0f}."
+                return f"Average price is ₹{self.df['price'].mean():,.0f}."
             return "Average price is not available."
         if 'what is discount percentage' in question_lower:
-            return "🏷️ Discount percentage tells you how much price is reduced compared to the original price."
+            return "Discount percentage tells you how much price is reduced compared to the original price."
         if 'what is rating' in question_lower:
-            return "⭐ Rating is the average score given by customers, usually out of 5."
+            return "Rating is the average score given by customers, usually out of 5."
         
         # Best selling products
         if 'best selling' in question_lower or 'top product' in question_lower or 'most sold' in question_lower:
             if 'price' in self.df.columns:
                 if 'product_name' in self.df.columns:
                     top_products = self.df.nlargest(5, 'price')[['product_name', 'price', 'category']]
-                    result = "🏆 Top 5 Products by Price:\n\n"
+                    result = "Top 5 Products by Price:\n\n"
                     for idx, row in top_products.iterrows():
                         result += f"• {row['product_name'][:50]}\n  Price: ₹{row['price']:,.0f} | Category: {row['category']}\n\n"
                     return result
                 else:
-                    return f"💰 Price range: ₹{self.df['price'].min():,.0f} - ₹{self.df['price'].max():,.0f}\nAverage Price: ₹{self.df['price'].mean():,.0f}"
+                    return f"Price range: ₹{self.df['price'].min():,.0f} - ₹{self.df['price'].max():,.0f}\nAverage Price: ₹{self.df['price'].mean():,.0f}"
             return "Price data not available."
         
         # Category performance
         elif 'which category' in question_lower or 'best category' in question_lower or 'top category' in question_lower:
             if 'category' in self.df.columns and 'rating' in self.df.columns:
                 best_cat = self.df.groupby('category')['rating'].mean().sort_values(ascending=False).head(3)
-                result = "🌟 Best Performing Categories:\n\n"
+                result = "Best Performing Categories:\n\n"
                 for cat, rating in best_cat.items():
                     count = len(self.df[self.df['category'] == cat])
-                    result += f"• {cat}: {rating:.1f} ⭐ ({count} products)\n"
+                    result += f"• {cat}: {rating:.1f} stars ({count} products)\n"
                 return result
             return "Category or rating data not available."
         
@@ -335,7 +335,7 @@ class FlipInsightAnalyzer:
         elif 'revenue' in question_lower or 'highest revenue' in question_lower or 'top revenue' in question_lower:
             if 'category' in self.df.columns and 'price' in self.df.columns:
                 top_revenue = self.df.groupby('category')['price'].sum().sort_values(ascending=False).head(3)
-                result = "💰 Top Revenue Categories:\n\n"
+                result = "Top Revenue Categories:\n\n"
                 for cat, revenue in top_revenue.items():
                     result += f"• {cat}: ₹{revenue:,.0f}\n"
                 return result
@@ -347,7 +347,7 @@ class FlipInsightAnalyzer:
                 avg_discount = self.df['discount_percentage'].mean()
                 max_discount = self.df['discount_percentage'].max()
                 min_discount = self.df['discount_percentage'].min()
-                return f"💸 Discount Insights:\n\n• Average Discount: {avg_discount:.1f}%\n• Maximum Discount: {max_discount:.1f}%\n• Minimum Discount: {min_discount:.1f}%"
+                return f"Discount Insights:\n\n• Average Discount: {avg_discount:.1f}%\n• Maximum Discount: {max_discount:.1f}%\n• Minimum Discount: {min_discount:.1f}%"
             return "Discount data not available."
         
         # Rating insights
@@ -356,18 +356,18 @@ class FlipInsightAnalyzer:
                 avg_rating = self.df['rating'].mean()
                 best_rating = self.df['rating'].max()
                 worst_rating = self.df['rating'].min()
-                return f"⭐ Rating Insights:\n\n• Average Rating: {avg_rating:.1f}/5\n• Best Rating: {best_rating:.1f}/5\n• Lowest Rating: {worst_rating:.1f}/5"
+                return f"Rating Insights:\n\n• Average Rating: {avg_rating:.1f}/5\n• Best Rating: {best_rating:.1f}/5\n• Lowest Rating: {worst_rating:.1f}/5"
             return "Rating data not available."
         
         # Product count
         elif 'how many' in question_lower or 'total products' in question_lower or 'count' in question_lower:
-            return f"📦 Total Products: {len(self.df):,}"
+            return f"Total Products: {len(self.df):,}"
         
         # Price insights
         elif 'price' in question_lower or 'cost' in question_lower:
             price_col = 'price' if 'price' in self.df.columns else ('selling_price' if 'selling_price' in self.df.columns else None)
             if price_col:
-                return f"💰 Price Insights:\n\n• Average Price: ₹{self.df[price_col].mean():,.0f}\n• Median Price: ₹{self.df[price_col].median():,.0f}\n• Price Range: ₹{self.df[price_col].min():,.0f} - ₹{self.df[price_col].max():,.0f}"
+                return f"Price Insights:\n\n• Average Price: ₹{self.df[price_col].mean():,.0f}\n• Median Price: ₹{self.df[price_col].median():,.0f}\n• Price Range: ₹{self.df[price_col].min():,.0f} - ₹{self.df[price_col].max():,.0f}"
             return "Price data not available."
 
         # Association rules / product pairs
@@ -376,9 +376,9 @@ class FlipInsightAnalyzer:
             rules = association_result.get('rules', [])
             if not rules:
                 note = association_result.get('note', 'Association rules not available for this dataset.')
-                return f"🔗 Product Associations:\n\n{note}"
+                return f"Product Associations:\n\n{note}"
             top_rules = rules[:10]
-            result = "🔗 Top Product Pairs (sold together):\n\n"
+            result = "Top Product Pairs (sold together):\n\n"
             for rule in top_rules:
                 result += (
                     f"• {rule['product_a']} + {rule['product_b']} "
@@ -414,7 +414,8 @@ class FlipInsightAnalyzer:
         if transaction_col is None:
             return {
                 'rules': [],
-                'note': 'Transaction ID column not found. Add an order/transaction/basket ID column to compute product pairs.'
+                'note': 'Transaction ID column not found. Add an order/transaction/basket ID column to compute product pairs.',
+                'by_product': {}
             }
 
         baskets = self.df[[transaction_col, product_col]].dropna()
@@ -681,20 +682,20 @@ class FlipInsightAnalyzer:
     def get_general_insights(self):
         """Provide general insights about the data"""
         insights = []
-        insights.append(f"📊 Data Overview: {len(self.df)} products analyzed")
+        insights.append(f"Data Overview: {len(self.df)} products analyzed")
         
         if 'category' in self.df.columns:
-            insights.append(f"📁 Categories: {self.df['category'].nunique()} unique categories")
+            insights.append(f"Categories: {self.df['category'].nunique()} unique categories")
         
         price_col = 'price' if 'price' in self.df.columns else ('selling_price' if 'selling_price' in self.df.columns else None)
         if price_col:
-            insights.append(f"💰 Price Range: ₹{self.df[price_col].min():,.0f} - ₹{self.df[price_col].max():,.0f}")
-            insights.append(f"💰 Average Price: ₹{self.df[price_col].mean():,.0f}")
+            insights.append(f"Price Range: ₹{self.df[price_col].min():,.0f} - ₹{self.df[price_col].max():,.0f}")
+            insights.append(f"Average Price: ₹{self.df[price_col].mean():,.0f}")
         
         if 'rating' in self.df.columns:
-            insights.append(f"⭐ Average Rating: {self.df['rating'].mean():.1f}/5")
+            insights.append(f"Average Rating: {self.df['rating'].mean():.1f}/5")
         
         if 'discount_percentage' in self.df.columns:
-            insights.append(f"💸 Average Discount: {self.df['discount_percentage'].mean():.1f}%")
+            insights.append(f"Average Discount: {self.df['discount_percentage'].mean():.1f}%")
         
         return "\n".join(insights)

@@ -5,306 +5,311 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlipInsight - E-commerce Intelligence & Analytics System</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <div class="bg-orb orb-one"></div>
-    <div class="bg-orb orb-two"></div>
 
-    <button id="downloadPdf" class="download-btn download-float print-hide">
-        <i class="fas fa-file-pdf"></i> Download PDF
-    </button>
-    <div class="page">
-        <div class="report-header print-only">
+<div class="bg-orb orb-one"></div>
+<div class="bg-orb orb-two"></div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar print-hide">
+    <div class="sidebar-header">
+        <div class="logo-icon">📊</div>
+        <div class="title">FlipInsight</div>
+        <div class="subtitle">E-commerce Intelligence</div>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">📌 Navigation</div>
+        <button class="nav-btn active" data-target="section-dashboard">🏠 Dashboard</button>
+        <button class="nav-btn" data-target="section-kpis">📈 KPIs</button>
+        <button class="nav-btn" data-target="section-insights">💡 Insights</button>
+        <button class="nav-btn" data-target="section-charts">📊 Charts</button>
+        <button class="nav-btn" data-target="section-products">🛍️ Products</button>
+        <button class="nav-btn" data-target="section-basket">🛒 Market Basket</button>
+        <button class="nav-btn" data-target="section-model">🤖 AI Model</button>
+        <button class="nav-btn" data-target="section-chat">💬 AI Assistant</button>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">📊 Data Status</div>
+        <div class="data-status" id="dataStatusSidebar">
+            ⏳ No data loaded<br><small>Upload a file to begin</small>
+        </div>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">ℹ️ About</div>
+        <div class="about-content">
+            <strong>FlipInsight</strong> — Advanced e-commerce intelligence system
+            <ul class="feature-list">
+                <li>📊 Real-time analytics</li>
+                <li>🔍 Market basket analysis</li>
+                <li>🤖 AI-powered insights</li>
+                <li>💬 Interactive assistant</li>
+            </ul>
+        </div>
+    </div>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="main-wrapper">
+<div class="page">
+
+    <!-- Report header (print only) -->
+    <div class="report-header print-only">
+        <div><h1>FlipInsight Report</h1><p>Official Analytics Summary</p></div>
+        <div class="report-meta">Generated on: <span id="reportDate"></span></div>
+    </div>
+
+    <!-- Top Bar -->
+    <header class="topbar print-hide">
+        <div class="brand">
+            <div class="brand-mark">📊</div>
             <div>
-                <h1>FlipInsight Report</h1>
-                <p>Official Analytics Summary</p>
-            </div>
-            <div class="report-meta">
-                <span>Generated on: <span id="reportDate"></span></span>
+                <h1>FlipInsight</h1>
+                <p class="tagline">E-commerce Intelligence &amp; Analytics System</p>
             </div>
         </div>
-        <header class="topbar print-hide">
-            <div class="brand">
-                <div class="brand-mark">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div>
-                    <h1>FlipInsight</h1>
-                    <p class="tagline">E-commerce Intelligence & Analytics System</p>
-                </div>
-            </div>
-        </header>
+        <div class="status-pill" id="statusPill">● ACTIVE</div>
+    </header>
 
-        <section class="hero print-hide">
+    <!-- ===== DASHBOARD / UPLOAD SECTION ===== -->
+    <section id="section-dashboard">
+        <div class="section-title">
+            <h2>Dashboard</h2>
+            <p>Welcome to FlipInsight — Your complete e-commerce intelligence platform</p>
+        </div>
+
+        <div class="hero-grid">
             <div class="hero-copy">
-                <h2>Turn store data into clear, simple insights.</h2>
-                <p>Upload your product data once and get pricing, category performance, and product pair insights in seconds.</p>
+                <h2>Turn data into insights</h2>
+                <p>Upload your product data and get instant analytics</p>
                 <div class="hero-highlights">
-                    <div>
-                        <span class="label">Smart KPIs</span>
-                        <span class="value">Revenue, discount, and rating signals</span>
-                    </div>
-                    <div>
-                        <span class="label">Market Basket</span>
-                        <span class="value">See which products sell together</span>
-                    </div>
-                    <div>
-                        <span class="label">AI Assist</span>
-                        <span class="value">Ask questions in plain language</span>
-                    </div>
+                    <div><div class="label">Smart KPIs</div><div class="value">Revenue, discount, ratings analysis</div></div>
+                    <div><div class="label">Market Basket</div><div class="value">Products frequently sold together</div></div>
+                    <div><div class="label">AI Assist</div><div class="value">Ask questions about your data</div></div>
+                    <div><div class="label">ML Models</div><div class="value">Rating and sales predictions</div></div>
                 </div>
             </div>
+
             <div class="upload-card">
                 <div class="upload-header">
-                    <i class="fas fa-cloud-upload-alt"></i>
                     <div>
-                        <h3>Upload Your Data</h3>
-                        <p>CSV or Excel with columns like Product Name, Category, Price, Discount, Rating.</p>
+                        <h3>📁 Upload Your Data</h3>
+                        <p>Supported formats: CSV, Excel (XLSX, XLS)</p>
+                        <p style="margin-top:8px;">Required columns: Product Name, Category, Price, Discount %, Rating</p>
+                        <p style="margin-top:8px;">Optional: Transaction ID for Market Basket Analysis</p>
                     </div>
                 </div>
                 <div class="file-input-wrapper">
                     <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
-                    <label for="fileInput" class="file-label">
-                        <i class="fas fa-folder-open"></i> Choose File
-                    </label>
+                    <label for="fileInput" class="file-label">📂 Choose File</label>
+                    <span id="fileNameDisplay" style="color:var(--muted);font-size:13px;"></span>
                 </div>
-                <button id="uploadBtn" onclick="uploadFile()">
-                    <i class="fas fa-upload"></i> Upload & Analyze
-                </button>
+                <button id="uploadBtn">📊 Upload &amp; Analyze</button>
                 <div id="uploadStatus" class="status-message"></div>
             </div>
-        </section>
-
-        <section id="dashboard" class="dashboard hidden">
-            <div class="section-title">
-                <h2>Key Performance Indicators</h2>
-                <p>Quick view of your product performance.</p>
-            </div>
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <i class="fas fa-box"></i>
-                    <div class="metric-info">
-                        <h4>Total Products</h4>
-                        <p id="totalProducts">0</p>
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <i class="fas fa-tags"></i>
-                    <div class="metric-info">
-                        <h4>Categories</h4>
-                        <p id="totalCategories">0</p>
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <i class="fas fa-rupee-sign"></i>
-                    <div class="metric-info">
-                        <h4>Avg Price</h4>
-                        <p id="avgPrice">₹0</p>
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <i class="fas fa-star"></i>
-                    <div class="metric-info">
-                        <h4>Avg Rating</h4>
-                        <p id="avgRating">0.0</p>
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <i class="fas fa-percent"></i>
-                    <div class="metric-info">
-                        <h4>Avg Discount</h4>
-                        <p id="avgDiscount">0%</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section-title">
-                <h2>Business Insights</h2>
-                <p>Easy-to-understand signals by category and products.</p>
-            </div>
-            <div class="insights-grid">
-                <div class="insight-card">
-                    <h3><i class="fas fa-chart-bar"></i> Top Categories by Revenue</h3>
-                    <div id="topRevenue" class="insight-content">
-                        <p class="placeholder">Upload data to see insights</p>
-                    </div>
-                </div>
-
-                <div class="insight-card">
-                    <h3><i class="fas fa-star"></i> Top Rated Categories</h3>
-                    <div id="topRated" class="insight-content">
-                        <p class="placeholder">Upload data to see insights</p>
-                    </div>
-                </div>
-
-                <div class="insight-card">
-                    <h3><i class="fas fa-chart-pie"></i> Product Segmentation</h3>
-                    <div id="segmentation" class="insight-content">
-                        <p class="placeholder">Upload data to see insights</p>
-                    </div>
-                </div>
-
-                <div class="insight-card">
-                    <h3><i class="fas fa-robot"></i> Smart Suggestions</h3>
-                    <div id="recommendations" class="insight-content">
-                        <p class="placeholder">Upload data to see recommendations</p>
-                    </div>
-                </div>
-                <div class="insight-card">
-                    <h3><i class="fas fa-wallet"></i> Profit & Loss</h3>
-                    <div id="profitLoss" class="insight-content">
-                        <p class="placeholder">Upload data to see profit and loss</p>
-                    </div>
-                </div>
-                <div class="insight-card">
-                    <h3><i class="fas fa-calendar"></i> Avg Annual Expenditure</h3>
-                    <div id="avgExpenditure" class="insight-content">
-                        <p class="placeholder">Upload data to see annual expenditure</p>
-                    </div>
-                </div>
-            </div>
-            <div class="insight-card explanation-card">
-                <h3><i class="fas fa-info-circle"></i> Why These Insights?</h3>
-                <div id="insightsExplanation" class="insight-content">
-                    <p class="placeholder">Upload data to see the explanation of how suggestions are generated.</p>
-                </div>
-            </div>
-
-            <div class="section-title">
-                <h2>Products & Filters</h2>
-                <p>Systematic view of all products with pricing, ratings, and sales.</p>
-            </div>
-            <div class="chart-filter-grid">
-                <div class="insight-card chart-card wide-chart">
-                    <h3><i class="fas fa-chart-bar"></i> Product Demand (Bar)</h3>
-                    <canvas id="productChart" class="bar-canvas" height="360"></canvas>
-                </div>
-                <div class="insight-card filter-card print-hide">
-                    <h3><i class="fas fa-filter"></i> Filters</h3>
-                    <div class="filter-group">
-                        <label for="searchProduct">Search</label>
-                        <input type="text" id="searchProduct" placeholder="Type product name...">
-                    </div>
-                    <div class="filter-group">
-                        <label for="categoryFilter">Category</label>
-                        <select id="categoryFilter"></select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="sortFilter">Sort By</label>
-                        <select id="sortFilter">
-                            <option value="name_asc">Name (A-Z)</option>
-                            <option value="price_high">High Price</option>
-                            <option value="price_low">Low Price</option>
-                            <option value="rating_high">High Rating</option>
-                            <option value="rating_low">Low Rating</option>
-                            <option value="discount_high">High Discount</option>
-                            <option value="discount_low">Low Discount</option>
-                            <option value="sales_high">High Sales</option>
-                            <option value="sales_low">Low Sales</option>
-                        </select>
-                    </div>
-                    <div class="filter-note">Filters update the product list below.</div>
-                </div>
-            </div>
-            <div class="insight-card">
-                <h3><i class="fas fa-list"></i> All Products (Detailed)</h3>
-                <div id="productTable" class="product-table">
-                    <p class="placeholder">Upload data to see products</p>
-                </div>
-            </div>
-            <div class="insight-card">
-                <h3><i class="fas fa-trophy"></i> Top Selling Products</h3>
-                <div id="topSelling" class="insight-content">
-                    <p class="placeholder">Upload data to see top sellers</p>
-                </div>
-            </div>
-
-            <div class="section-title">
-                <h2>Market Basket Pairs</h2>
-                <p>Which products are sold together most often.</p>
-                <p class="section-note">Market basket by pair summarizes the exact product pairs that appear together in the same customer orders in your uploaded sheet. Support is the percentage of total transactions that include the pair, calculated as (pair transactions ÷ total transactions) × 100.</p>
-            </div>
-            <div class="insight-card association-card">
-                <div class="association-header">
-                    <h3><i class="fas fa-link"></i> Product Associations</h3>
-                    <p id="associationMeta" class="muted">Upload data to see product pairings</p>
-                </div>
-                <div id="associationRules" class="association-list">
-                    <p class="placeholder">Upload data to see associations</p>
-                </div>
-            </div>
-
-            <div class="section-title">
-                <h2>Market Basket by Product</h2>
-                <p>Each product and the list of products sold with it.</p>
-                <p class="section-note">Market basket by product shows, for each item, the exact other items that customers bought alongside it in your uploaded sheet.</p>
-            </div>
-            <div class="insight-card">
-                <div id="basketByProduct" class="association-list">
-                    <p class="placeholder">Upload data to see product-level associations</p>
-                </div>
-            </div>
-
-            
-
-            <div class="section-title print-hide">
-                <h2>AI Model Performance</h2>
-                <p>Model status based on your uploaded data.</p>
-            </div>
-            <div class="model-card print-hide">
-                <div class="model-info">
-                    <i class="fas fa-brain"></i>
-                    <div>
-                        <h4>Rating Prediction Model</h4>
-                        <p id="modelAccuracy">Model ready for training</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section-title print-hide">
-                <h2>AI Sales Assistant</h2>
-                <p>Tap a question to get answers in simple words.</p>
-            </div>
-            <div class="chatbot-section print-hide">
-                <div class="chatbot-header">
-                    <i class="fas fa-robot"></i>
-                    <div>
-                        <h3>Intelligent Chat Assistant</h3>
-                        <p>Simple answers for everyone</p>
-                    </div>
-                </div>
-                <div class="chat-messages" id="chatMessages">
-                    <div class="message bot">
-                        <div class="message-content">
-                            <strong>Hello! I'm your AI Sales Assistant.</strong><br><br>
-                            I can help you understand your data. Tap a question below:
-                            <ul>
-                                <li>"How many products do we have?"</li>
-                                <li>"Which category performs best?"</li>
-                                <li>"What is the average rating?"</li>
-                                <li>"Which products generate highest revenue?"</li>
-                                <li>"Tell me about discounts"</li>
-                                <li>"Show me price insights"</li>
-                                <li>"Which products are sold together?"</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="chat-quick-questions" id="quickQuestions"></div>
-            </div>
-        </section>
-
-        <footer>
-            <p>FlipInsight - E-commerce Intelligence System | BCA Final Year Project 2024-2025</p>
-        </footer>
-        <div class="report-footer print-only">
-            <span>FlipInsight Official Report</span>
-            <span class="page-number">Page <span class="page-number-value"></span></span>
         </div>
+    </section>
+
+    <!-- ===== KPIs ===== -->
+    <section id="section-kpis" class="hidden">
+        <div class="section-title">
+            <h2>Key Performance Indicators</h2>
+            <p>Quick view of your product performance metrics</p>
+        </div>
+        <div class="metrics-grid">
+            <div class="metric-card"><div class="metric-icon">📦</div><div class="metric-info"><h4>Total Products</h4><p id="totalProducts">—</p></div></div>
+            <div class="metric-card"><div class="metric-icon">🏷️</div><div class="metric-info"><h4>Categories</h4><p id="totalCategories">—</p></div></div>
+            <div class="metric-card"><div class="metric-icon">💰</div><div class="metric-info"><h4>Avg Price</h4><p id="avgPrice">—</p></div></div>
+            <div class="metric-card"><div class="metric-icon">⭐</div><div class="metric-info"><h4>Avg Rating</h4><p id="avgRating">—</p></div></div>
+            <div class="metric-card"><div class="metric-icon">🎯</div><div class="metric-info"><h4>Avg Discount</h4><p id="avgDiscount">—</p></div></div>
+        </div>
+    </section>
+
+    <!-- ===== INSIGHTS ===== -->
+    <section id="section-insights" class="hidden">
+        <div class="section-title">
+            <h2>Business Insights</h2>
+            <p>Actionable insights derived from your data</p>
+        </div>
+        <div class="insights-grid">
+            <div class="insight-card">
+                <h3>🏆 Top Categories by Revenue</h3>
+                <div id="topRevenue" class="insight-content"><p class="placeholder">Upload data to see insights</p></div>
+            </div>
+            <div class="insight-card">
+                <h3>⭐ Top Rated Categories</h3>
+                <div id="topRated" class="insight-content"><p class="placeholder">Upload data to see insights</p></div>
+            </div>
+            <div class="insight-card">
+                <h3>📊 Product Segmentation</h3>
+                <div id="segmentation" class="insight-content"><p class="placeholder">Upload data to see insights</p></div>
+            </div>
+            <div class="insight-card">
+                <h3>💰 Profit &amp; Loss Analysis</h3>
+                <div id="profitLoss" class="insight-content"><p class="placeholder">Upload data to see profit and loss</p></div>
+            </div>
+            <div class="insight-card">
+                <h3>📅 Avg Annual Expenditure</h3>
+                <div id="avgExpenditure" class="insight-content"><p class="placeholder">Upload data to see annual expenditure</p></div>
+            </div>
+            <div class="insight-card">
+                <h3>🤖 Smart Recommendations</h3>
+                <div id="recommendations" class="insight-content"><p class="placeholder">Upload data to see recommendations</p></div>
+            </div>
+        </div>
+        <div class="insight-card explanation-card" style="margin-top:18px;">
+            <h3>🔍 Why These Insights?</h3>
+            <div id="insightsExplanation" class="insight-content"><p class="placeholder">Upload data to see explanation</p></div>
+        </div>
+    </section>
+
+    <!-- ===== CHARTS ===== -->
+    <section id="section-charts" class="hidden">
+        <div class="section-title">
+            <h2>Interactive Data Visualization</h2>
+            <p>Explore your data through interactive charts</p>
+        </div>
+
+        <div class="chart-selector-row">
+            <label for="chartTypeSelect">Select Chart Type</label>
+            <select id="chartTypeSelect">
+                <option value="sales">Top Products by Sales</option>
+                <option value="category">Category Distribution</option>
+                <option value="price_rating">Price vs Rating Trend</option>
+                <option value="discount_rating">Discount vs Rating Trend</option>
+                <option value="rating_dist">Rating Distribution</option>
+            </select>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+        </div>
+        <p id="chartNoData" class="placeholder" style="display:none;text-align:center;padding:40px;">No data available for this chart</p>
+    </section>
+
+    <!-- ===== PRODUCTS ===== -->
+    <section id="section-products" class="hidden">
+        <div class="section-title">
+            <h2>Products &amp; Filters</h2>
+            <p>Search, filter, and sort through your product catalog</p>
+        </div>
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="searchProduct">🔍 Search products</label>
+                <input type="text" id="searchProduct" placeholder="Type product name...">
+            </div>
+            <div class="filter-group">
+                <label for="categoryFilter">📂 Category</label>
+                <select id="categoryFilter"><option value="all">All</option></select>
+            </div>
+            <div class="filter-group">
+                <label for="sortFilter">📊 Sort By</label>
+                <select id="sortFilter">
+                    <option value="name_asc">Name</option>
+                    <option value="price_high">Price High</option>
+                    <option value="price_low">Price Low</option>
+                    <option value="rating_high">Rating High</option>
+                    <option value="rating_low">Rating Low</option>
+                    <option value="discount_high">Discount High</option>
+                    <option value="discount_low">Discount Low</option>
+                    <option value="sales_high">Sales High</option>
+                    <option value="sales_low">Sales Low</option>
+                </select>
+            </div>
+        </div>
+        <div class="insight-card" style="margin-top:16px;">
+            <div id="productTable" class="product-table"><p class="placeholder">Upload data to see products</p></div>
+        </div>
+        <div class="insight-card" style="margin-top:16px;">
+            <h3>🏆 Top Selling Products</h3>
+            <div id="topSelling" class="insight-content"><p class="placeholder">Upload data to see top sellers</p></div>
+        </div>
+    </section>
+
+    <!-- ===== MARKET BASKET ===== -->
+    <section id="section-basket" class="hidden">
+        <div class="section-title">
+            <h2>Market Basket Analysis</h2>
+            <p>Discover product associations and customer buying patterns</p>
+        </div>
+        <div class="explanation-text">
+            <strong>📊 What is Market Basket Analysis?</strong><br>
+            Market Basket Analysis helps identify products that are frequently purchased together.
+            By analyzing transaction data, we can discover patterns in customer buying behavior.
+            This information can be used for product placement, cross-selling strategies,
+            and promotional bundling to increase sales.
+        </div>
+
+        <h3 style="margin:20px 0 12px;color:var(--text);">🔗 Frequently Bought Together</h3>
+        <div id="associationRules" class="bottle-grid"><p class="placeholder">Upload data to see associations</p></div>
+
+        <h3 style="margin:28px 0 8px;color:var(--text);">🛍️ Products Frequently Bought Together</h3>
+        <div class="explanation-text">
+            This view shows complementary products that are commonly purchased alongside each main product.
+            Use this information to create effective product bundles and cross-selling recommendations.
+        </div>
+        <div id="basketByProduct" class="bottle-grid"><p class="placeholder">Upload data to see product-level associations</p></div>
+    </section>
+
+    <!-- ===== AI MODEL ===== -->
+    <section id="section-model" class="hidden">
+        <div class="section-title">
+            <h2>AI Model Performance</h2>
+            <p>Machine learning models for rating and sales prediction</p>
+        </div>
+        <div class="model-card">
+            <div class="model-icon">🤖</div>
+            <div>
+                <h4>Rating Prediction Model</h4>
+                <p id="modelAccuracy" style="color:var(--muted);margin-top:6px;">Model ready for training (requires price, discount, and rating columns)</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== AI CHAT ===== -->
+    <section id="section-chat" class="hidden">
+        <div class="section-title">
+            <h2>AI Sales Assistant</h2>
+            <p>Ask questions about your data and get instant intelligent answers</p>
+        </div>
+        <div class="chatbot-section">
+            <div class="chatbot-header">
+                <h3>🤖 Intelligent Assistant</h3>
+                <p>Ask anything about your data — I'm here to help!</p>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <div class="message-content">
+                        Hello! I'm your AI Sales Assistant.<br><br>
+                        Upload your data and ask me anything about it!
+                    </div>
+                </div>
+            </div>
+            <div class="quick-questions-grid" id="quickQuestions"></div>
+            <div style="padding:12px 20px;background:var(--panel);border-top:1px solid var(--border);">
+                <button id="clearChatBtn" style="background:rgba(255,100,100,0.15);border:1px solid rgba(255,100,100,0.3);color:#ff9999;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;">🗑️ Clear Chat History</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <strong>FlipInsight</strong> — E-commerce Intelligence System | BCA Final Year Project
+    </footer>
+
+    <div class="report-footer print-only">
+        <span>FlipInsight Official Report</span>
+        <span>Page <span class="page-number-value"></span></span>
     </div>
 
-    <script src="js/script.js"></script>
+</div><!-- .page -->
+</div><!-- .main-wrapper -->
+
+<script src="js/script.js"></script>
 </body>
 </html>

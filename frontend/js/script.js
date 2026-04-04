@@ -1,583 +1,589 @@
-// API Configuration
-const API_URL = 'https://practicing-1.onrender.com/api';
-// Global variables
-let currentData = null;
-let productChart = null;
+// ===== CONFIG =====
+const API_URL = 'http://localhost:5000/api';
+
+// ===== STATE =====
+let currentInsights = null;
+let mainChartInstance = null;
 let productListFull = [];
 
-// File upload handling
+// ===== CHART COLORS (matching Streamlit accent palette) =====
+const ACCENT   = '#39ff88';
+const ACCENT2  = '#00c2ff';
+const MUTED    = '#9aa4b2';
+const PANEL2   = '#1b2130';
+const BORDER   = 'rgba(255,255,255,0.08)';
+
+const CHART_COLORS = [
+    '#39ff88','#00c2ff','#ff6b9d','#ffd166','#a78bfa',
+    '#f97316','#06b6d4','#84cc16','#ec4899','#14b8a6'
+];
+
+Chart.defaults.color = MUTED;
+Chart.defaults.borderColor = BORDER;
+Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
+Chart.defaults.font.size = 13;
+
+// ===== SIDEBAR NAVIGATION =====
+document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        const targetId = this.getAttribute('data-target');
+        const el = document.getElementById(targetId);
+        if (!el) return;
+
+        // If data not loaded and not dashboard, still scroll but sections are hidden
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // If charts section becomes visible, render chart
+        if (targetId === 'section-charts' && currentInsights) {
+            renderSelectedChart();
+        }
+    });
+});
+
+// ===== FILE INPUT =====
 document.getElementById('fileInput').addEventListener('change', function (e) {
-    const fileName = e.target.files[0]?.name;
-    if (fileName) {
-        document.getElementById('uploadBtn').innerHTML = `<i class="fas fa-file"></i> ${fileName} selected`;
+    const file = e.target.files[0];
+    if (file) {
+        document.getElementById('fileNameDisplay').textContent = file.name;
+        document.getElementById('uploadBtn').textContent = `📊 Upload & Analyze "${file.name}"`;
     }
 });
 
-// Upload file function
-async function uploadFile() {
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput.files[0];
-
-    if (!file) {
-        showStatus('Please select a file first!', 'error');
-        return;
-    }
+// ===== UPLOAD =====
+document.getElementById('uploadBtn').addEventListener('click', async function () {
+    const file = document.getElementById('fileInput').files[0];
+    if (!file) { showStatus('Please select a file first!', 'error'); return; }
 
     const formData = new FormData();
     formData.append('file', file);
 
-    showStatus('Uploading and analyzing...', 'info');
-    document.getElementById('uploadBtn').disabled = true;
+    showStatus('📊 Loading and analyzing your data...', 'info');
+    this.disabled = true;
 
     try {
-        const response = await fetch(`${API_URL}/upload`, {
-            method: 'POST',
-            body: formData
-        });
-
-        const data = await response.json();
+        const res  = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
+        const data = await res.json();
 
         if (data.success) {
-            showStatus(data.message, 'success');
-            currentData = data;
-            displayDashboard(data);
-            document.getElementById('dashboard').classList.remove('hidden');
+            currentInsights = data.insights;
+            productListFull = data.insights.product_list || [];
 
-            // Scroll to dashboard
-            document.getElementById('dashboard').scrollIntoView({ behavior: 'smooth' });
+            showStatus(`✅ ${data.message}`, 'success');
+            renderAll(data.insights);
+
+            // Update sidebar status
+            document.getElementById('dataStatusSidebar').innerHTML =
+                `✅ ${(data.insights.total_products || 0).toLocaleString()} rows loaded`;
+
+            // Reveal all sections
+            ['section-kpis','section-insights','section-charts',
+             'section-products','section-basket','section-model','section-chat']
+                .forEach(id => document.getElementById(id).classList.remove('hidden'));
+
+            setTimeout(() => showStatus('', ''), 4000);
         } else {
-            showStatus(data.error, 'error');
+            showStatus(`❌ ${data.error}`, 'error');
         }
-    } catch (error) {
-        showStatus('Error uploading file. Make sure the backend server is running!', 'error');
-        console.error('Error:', error);
+    } catch (err) {
+        showStatus('❌ Error uploading file. Make sure the backend server is running!', 'error');
+        console.error(err);
     } finally {
-        document.getElementById('uploadBtn').disabled = false;
-        document.getElementById('uploadBtn').innerHTML = '<i class="fas fa-upload"></i> Upload & Analyze';
+        this.disabled = false;
+        this.textContent = '📊 Upload & Analyze';
     }
-}
+});
 
-// Display dashboard with insights
-function displayDashboard(data) {
-    const insights = data.insights;
-
-    // Update metrics
-    document.getElementById('totalProducts').innerText = insights.total_products?.toLocaleString() || '0';
-    document.getElementById('totalCategories').innerText = insights.total_categories || '0';
-    document.getElementById('avgPrice').innerText = `₹${Math.round(insights.avg_price || 0).toLocaleString()}`;
-    document.getElementById('avgRating').innerText = (insights.avg_rating || 0).toFixed(1);
-    document.getElementById('avgDiscount').innerText = `${Math.round(insights.avg_discount || 0)}%`;
-
-    // Display top categories by revenue
-    if (insights.top_categories_by_revenue) {
-        const revenueDiv = document.getElementById('topRevenue');
-        revenueDiv.innerHTML = '<ul>';
-        Object.entries(insights.top_categories_by_revenue).slice(0, 5).forEach(([cat, revenue]) => {
-            revenueDiv.innerHTML += `<li><strong>${cat}</strong>: ₹${Math.round(revenue).toLocaleString()}</li>`;
-        });
-        revenueDiv.innerHTML += '</ul>';
-    }
-
-    // Display top rated categories
-    if (insights.top_categories_by_rating) {
-        const ratingDiv = document.getElementById('topRated');
-        ratingDiv.innerHTML = '<ul>';
-        Object.entries(insights.top_categories_by_rating).slice(0, 5).forEach(([cat, rating]) => {
-            ratingDiv.innerHTML += `<li><strong>${cat}</strong>: ${rating.toFixed(1)} ⭐</li>`;
-        });
-        ratingDiv.innerHTML += '</ul>';
-    }
-
-    // Display segmentation
-    if (insights.segmentation) {
-        const segDiv = document.getElementById('segmentation');
-        segDiv.innerHTML = '<ul>';
-        Object.entries(insights.segmentation).forEach(([segment, count]) => {
-            segDiv.innerHTML += `<li><strong>${segment}</strong>: ${count} products</li>`;
-        });
-        segDiv.innerHTML += '</ul>';
-    }
-
-    // Display recommendations
-    if (insights.recommendations && insights.recommendations.length > 0) {
-        const recDiv = document.getElementById('recommendations');
-        recDiv.innerHTML = '<ul>';
-        insights.recommendations.forEach(rec => {
-            recDiv.innerHTML += `<li>${rec}</li>`;
-        });
-        recDiv.innerHTML += '</ul>';
-    }
-
-    // Explanation of insights
-    const explanationDiv = document.getElementById('insightsExplanation');
-    if (insights.insights_explanation) {
-        const lines = insights.insights_explanation.split('\n');
-        explanationDiv.innerHTML = '<ul>';
-        lines.forEach(line => {
-            explanationDiv.innerHTML += `<li>${line}</li>`;
-        });
-        explanationDiv.innerHTML += '</ul>';
-    }
-
-    // Profit & loss
-    const profitLossDiv = document.getElementById('profitLoss');
-    if (insights.profit_loss && insights.profit_loss.available) {
-        const pl = insights.profit_loss;
-        profitLossDiv.innerHTML = `
-            <ul>
-                <li><strong>Total Profit</strong>: ₹${Math.round(pl.total_profit).toLocaleString()}</li>
-                <li><strong>Total Loss</strong>: ₹${Math.round(pl.total_loss).toLocaleString()}</li>
-                <li><strong>Net Profit</strong>: ₹${Math.round(pl.net_profit).toLocaleString()}</li>
-                <li><strong>Basis</strong>: ${pl.basis}</li>
-            </ul>
-        `;
-    } else {
-        profitLossDiv.innerHTML = `<p class="placeholder">${insights.profit_loss?.note || 'Profit/Loss data not available.'}</p>`;
-    }
-
-    // Avg annual expenditure
-    const avgExpDiv = document.getElementById('avgExpenditure');
-    if (insights.avg_annual_expenditure && insights.avg_annual_expenditure.available) {
-        avgExpDiv.innerHTML = `
-            <ul>
-                <li><strong>Average Annual Expenditure</strong>: ₹${Math.round(insights.avg_annual_expenditure.average_annual_expenditure).toLocaleString()}</li>
-                <li><strong>Years Found</strong>: ${insights.avg_annual_expenditure.years.join(', ')}</li>
-            </ul>
-        `;
-    } else {
-        avgExpDiv.innerHTML = `<p class="placeholder">${insights.avg_annual_expenditure?.note || 'Annual expenditure not available.'}</p>`;
-    }
-
-    // Store full product list and render filters/table
-    productListFull = insights.product_list || [];
+// ===== RENDER ALL =====
+function renderAll(insights) {
+    renderKPIs(insights);
+    renderInsights(insights);
+    renderProducts(insights);
+    renderBasket(insights);
+    renderModel(insights);
+    renderQuickQuestions();
     populateCategoryFilter(productListFull);
     renderProductTable();
+    renderSelectedChart();
+}
 
-    // Top selling products
-    const topSellingDiv = document.getElementById('topSelling');
-    if (insights.top_selling_products && insights.top_selling_products.length > 0) {
-        topSellingDiv.innerHTML = '<ul>';
-        insights.top_selling_products.forEach(item => {
-            const salesBasis = insights.sales_basis || 'sales';
-            const salesLabel = salesBasis === 'review_count' ? 'Reviews' : 'Sales';
-            topSellingDiv.innerHTML += `<li><strong>${item.product_name}</strong>: ${Math.round(item.sales).toLocaleString()} ${salesLabel}</li>`;
+// ===== KPIs =====
+function renderKPIs(ins) {
+    document.getElementById('totalProducts').textContent = (ins.total_products || 0).toLocaleString();
+    document.getElementById('totalCategories').textContent = ins.total_categories || 0;
+    document.getElementById('avgPrice').textContent = `₹${Math.round(ins.avg_price || 0).toLocaleString()}`;
+    document.getElementById('avgRating').textContent = `${(ins.avg_rating || 0).toFixed(1)} / 5`;
+    document.getElementById('avgDiscount').textContent = `${Math.round(ins.avg_discount || 0)}%`;
+}
+
+// ===== INSIGHTS =====
+function renderInsights(ins) {
+    // Top revenue
+    const revDiv = document.getElementById('topRevenue');
+    if (ins.top_categories_by_revenue && Object.keys(ins.top_categories_by_revenue).length) {
+        revDiv.innerHTML = '<ul>' +
+            Object.entries(ins.top_categories_by_revenue).slice(0,5)
+                .map(([c,v]) => `<li><strong>${c}</strong>: ₹${Math.round(v).toLocaleString()}</li>`).join('') +
+            '</ul>';
+    } else { revDiv.innerHTML = '<p class="placeholder">No revenue data available</p>'; }
+
+    // Top rated
+    const rateDiv = document.getElementById('topRated');
+    if (ins.top_categories_by_rating && Object.keys(ins.top_categories_by_rating).length) {
+        rateDiv.innerHTML = '<ul>' +
+            Object.entries(ins.top_categories_by_rating).slice(0,5)
+                .map(([c,v]) => `<li><strong>${c}</strong>: ${v.toFixed(1)} ⭐</li>`).join('') +
+            '</ul>';
+    } else { rateDiv.innerHTML = '<p class="placeholder">No rating data available</p>'; }
+
+    // Segmentation
+    const segDiv = document.getElementById('segmentation');
+    if (ins.segmentation && Object.keys(ins.segmentation).length) {
+        segDiv.innerHTML = '<ul>' +
+            Object.entries(ins.segmentation)
+                .map(([s,c]) => `<li><strong>${s}</strong>: ${c} products</li>`).join('') +
+            '</ul>';
+    } else { segDiv.innerHTML = '<p class="placeholder">No segmentation data available</p>'; }
+
+    // Profit & Loss
+    const plDiv = document.getElementById('profitLoss');
+    if (ins.profit_loss && ins.profit_loss.available) {
+        const pl = ins.profit_loss;
+        plDiv.innerHTML = `<ul>
+            <li><strong>Total Profit</strong>: ₹${Math.round(pl.total_profit).toLocaleString()}</li>
+            <li><strong>Total Loss</strong>: ₹${Math.round(pl.total_loss).toLocaleString()}</li>
+            <li><strong>Net Profit</strong>: ₹${Math.round(pl.net_profit).toLocaleString()}</li>
+        </ul>`;
+    } else { plDiv.innerHTML = `<p class="placeholder">${ins.profit_loss?.note || 'Profit/Loss data not available.'}</p>`; }
+
+    // Annual expenditure
+    const expDiv = document.getElementById('avgExpenditure');
+    if (ins.avg_annual_expenditure && ins.avg_annual_expenditure.available) {
+        const ae = ins.avg_annual_expenditure;
+        expDiv.innerHTML = `<ul>
+            <li><strong>Average</strong>: ₹${Math.round(ae.average_annual_expenditure).toLocaleString()}</li>
+            <li><strong>Years</strong>: ${ae.years.join(', ')}</li>
+        </ul>`;
+    } else { expDiv.innerHTML = `<p class="placeholder">${ins.avg_annual_expenditure?.note || 'Annual expenditure not available.'}</p>`; }
+
+    // Recommendations
+    const recDiv = document.getElementById('recommendations');
+    if (ins.recommendations && ins.recommendations.length) {
+        recDiv.innerHTML = '<ul>' + ins.recommendations.slice(0,6).map(r => `<li>${r}</li>`).join('') + '</ul>';
+    } else { recDiv.innerHTML = '<p class="placeholder">No recommendations available</p>'; }
+
+    // Explanation
+    const expEl = document.getElementById('insightsExplanation');
+    if (ins.insights_explanation) {
+        const lines = ins.insights_explanation.split('\n').filter(l => l.trim());
+        expEl.innerHTML = '<ul>' + lines.slice(0,6).map(l => `<li>${l}</li>`).join('') + '</ul>';
+    } else { expEl.innerHTML = '<p class="placeholder">No explanation available</p>'; }
+}
+
+// ===== CHARTS =====
+document.getElementById('chartTypeSelect').addEventListener('change', renderSelectedChart);
+
+function renderSelectedChart() {
+    if (!currentInsights) return;
+    const type = document.getElementById('chartTypeSelect').value;
+    const noData = document.getElementById('chartNoData');
+
+    if (mainChartInstance) { mainChartInstance.destroy(); mainChartInstance = null; }
+
+    const canvas = document.getElementById('mainChart');
+    canvas.style.display = 'block';
+    noData.style.display = 'none';
+
+    const ins = currentInsights;
+    const products = ins.product_list || [];
+
+    if (type === 'sales') {
+        // ── Chart 1: Top Products by Sales (Bar) ──
+        const salesData = ins.product_sales && ins.product_sales.length
+            ? ins.product_sales
+            : products.filter(p => typeof p.price === 'number').map(p => ({ product_name: p.product_name, value: p.price }));
+
+        if (!salesData.length) { canvas.style.display='none'; noData.style.display='block'; return; }
+
+        const top = salesData.slice(0, 20);
+        mainChartInstance = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: top.map(d => truncate(d.product_name, 22)),
+                datasets: [{
+                    label: 'Sales',
+                    data: top.map(d => d.value),
+                    backgroundColor: top.map((_, i) => hexAlpha(CHART_COLORS[i % CHART_COLORS.length], 0.75)),
+                    borderColor:     top.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+                    borderWidth: 1, borderRadius: 4,
+                }]
+            },
+            options: chartOptions('Top Products by Sales', 'Product', 'Sales')
         });
-        topSellingDiv.innerHTML += '</ul>';
-    } else {
-        topSellingDiv.innerHTML = '<p class="placeholder">Top sellers unavailable (no sales or review signals found).</p>';
-    }
 
-    // Display association rules
-    const associationMeta = document.getElementById('associationMeta');
-    const associationDiv = document.getElementById('associationRules');
-    if (insights.association_meta) {
-        const note = insights.association_meta.note || '';
-        const totalTx = insights.association_meta.total_transactions || 0;
-        const uniqueProducts = insights.association_meta.unique_products || 0;
-        let metaText = '';
-        if (note) {
-            metaText = note;
-        } else {
-            metaText = `Transactions: ${totalTx.toLocaleString()} | Products: ${uniqueProducts.toLocaleString()}`;
-        }
-        associationMeta.innerText = metaText;
-    }
+    } else if (type === 'category') {
+        // ── Chart 2: Category Distribution (Bar) ──
+        const catMap = {};
+        products.forEach(p => { if (p.category) catMap[p.category] = (catMap[p.category] || 0) + 1; });
+        const entries = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
 
-    if (insights.association_rules && insights.association_rules.length > 0) {
-        associationDiv.innerHTML = '';
-        insights.association_rules.forEach(rule => {
-            const row = document.createElement('div');
-            row.className = 'pair-row';
+        if (!entries.length) { canvas.style.display='none'; noData.style.display='block'; return; }
 
-            const names = document.createElement('div');
-            names.className = 'pair-names';
-            names.innerText = `${rule.product_a} + ${rule.product_b}`;
-
-            const metrics = document.createElement('div');
-            metrics.className = 'pair-metrics';
-            const supportPct = (rule.support * 100).toFixed(2);
-            const confA = (rule.confidence_a_to_b * 100).toFixed(2);
-            const confB = (rule.confidence_b_to_a * 100).toFixed(2);
-            metrics.innerText = `When customers buy ${rule.product_a}, they also buy ${rule.product_b} (${rule.count} transactions, support ${supportPct}%). A→B ${confA}%, B→A ${confB}%.`;
-
-            row.appendChild(names);
-            row.appendChild(metrics);
-            associationDiv.appendChild(row);
+        mainChartInstance = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: entries.map(e => e[0]),
+                datasets: [{
+                    label: 'Products',
+                    data: entries.map(e => e[1]),
+                    backgroundColor: entries.map((_, i) => hexAlpha(CHART_COLORS[i % CHART_COLORS.length], 0.75)),
+                    borderColor:     entries.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+                    borderWidth: 1, borderRadius: 4,
+                }]
+            },
+            options: chartOptions('Category Distribution', 'Category', 'Number of Products')
         });
-    } else {
-        associationDiv.innerHTML = '<p class="placeholder">No association rules available for this dataset.</p>';
-    }
 
-    // Market basket by product
-    const basketDiv = document.getElementById('basketByProduct');
-    if (insights.association_by_product && Object.keys(insights.association_by_product).length > 0) {
-        basketDiv.innerHTML = '';
-        Object.entries(insights.association_by_product).forEach(([product, list]) => {
-            const row = document.createElement('div');
-            row.className = 'pair-row';
-            const name = document.createElement('div');
-            name.className = 'pair-names';
-            name.innerText = product;
-            const metrics = document.createElement('div');
-            metrics.className = 'pair-metrics';
-            if (list.length === 0) {
-                metrics.innerHTML = '<span>No sub products</span>';
-            } else {
-                metrics.innerHTML = list
-                    .map(item => `Customers who bought ${product} also bought ${item.product} in ${item.count} transactions.`)
-                    .join(' ');
+    } else if (type === 'price_rating') {
+        // ── Chart 3: Price vs Rating Trend (Line) ──
+        const pts = products.filter(p => typeof p.price === 'number' && typeof p.rating === 'number')
+            .sort((a,b) => a.price - b.price);
+
+        if (!pts.length) { canvas.style.display='none'; noData.style.display='block'; return; }
+
+        mainChartInstance = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: pts.map(p => `₹${Math.round(p.price).toLocaleString()}`),
+                datasets: [{
+                    label: 'Rating',
+                    data: pts.map(p => p.rating),
+                    borderColor: ACCENT,
+                    backgroundColor: hexAlpha(ACCENT, 0.12),
+                    pointBackgroundColor: ACCENT,
+                    pointRadius: 3,
+                    tension: 0.35, fill: true,
+                }]
+            },
+            options: chartOptions('Price vs Rating Trend', 'Price (₹)', 'Rating')
+        });
+
+    } else if (type === 'discount_rating') {
+        // ── Chart 4: Discount vs Rating Trend (Line) ──
+        const pts = products.filter(p => typeof p.discount_percentage === 'number' && typeof p.rating === 'number')
+            .sort((a,b) => a.discount_percentage - b.discount_percentage);
+
+        if (!pts.length) { canvas.style.display='none'; noData.style.display='block'; return; }
+
+        mainChartInstance = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: pts.map(p => `${p.discount_percentage.toFixed(1)}%`),
+                datasets: [{
+                    label: 'Rating',
+                    data: pts.map(p => p.rating),
+                    borderColor: ACCENT2,
+                    backgroundColor: hexAlpha(ACCENT2, 0.12),
+                    pointBackgroundColor: ACCENT2,
+                    pointRadius: 3,
+                    tension: 0.35, fill: true,
+                }]
+            },
+            options: chartOptions('Discount vs Rating Trend', 'Discount %', 'Rating')
+        });
+
+    } else if (type === 'rating_dist') {
+        // ── Chart 5: Rating Distribution (Bar) ──
+        const ratingMap = {};
+        products.forEach(p => {
+            if (typeof p.rating === 'number') {
+                const key = p.rating.toFixed(1);
+                ratingMap[key] = (ratingMap[key] || 0) + 1;
             }
-            row.appendChild(name);
-            row.appendChild(metrics);
-            basketDiv.appendChild(row);
         });
-    } else if (insights.product_list && insights.product_list.length > 0) {
-        basketDiv.innerHTML = '';
-        insights.product_list.forEach(item => {
-            const row = document.createElement('div');
-            row.className = 'pair-row';
-            const name = document.createElement('div');
-            name.className = 'pair-names';
-            name.innerText = item.product_name;
-            const metrics = document.createElement('div');
-            metrics.className = 'pair-metrics';
-            metrics.innerHTML = '<span>No sub products</span>';
-            row.appendChild(name);
-            row.appendChild(metrics);
-            basketDiv.appendChild(row);
+        const entries = Object.entries(ratingMap).sort((a,b) => parseFloat(a[0]) - parseFloat(b[0]));
+
+        if (!entries.length) { canvas.style.display='none'; noData.style.display='block'; return; }
+
+        mainChartInstance = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: entries.map(e => e[0]),
+                datasets: [{
+                    label: 'Products',
+                    data: entries.map(e => e[1]),
+                    backgroundColor: hexAlpha(ACCENT, 0.7),
+                    borderColor: ACCENT,
+                    borderWidth: 1, borderRadius: 4,
+                }]
+            },
+            options: chartOptions('Rating Distribution', 'Rating', 'Number of Products')
         });
-    } else {
-        basketDiv.innerHTML = '<p class="placeholder">No product list available.</p>';
     }
-
-    // Model accuracy display
-    if (insights.rating_model && insights.rating_model.accuracy !== undefined) {
-        const acc = insights.rating_model.accuracy.toFixed(1);
-        document.getElementById('modelAccuracy').innerText = `Model Accuracy: ${acc}%`;
-    }
-
-    // Product chart
-    const chartSeries = (insights.product_sales && insights.product_sales.length > 0)
-        ? insights.product_sales
-        : buildPriceSeriesFromProducts(productListFull);
-    renderProductChart(chartSeries);
 }
 
-// Render product chart
-function renderProductChart(series) {
-    const canvas = document.getElementById('productChart');
-    if (!canvas) return;
-
-    if (!series || series.length === 0) {
-        const parent = canvas.parentElement;
-        if (parent) {
-            parent.innerHTML = '<p class="placeholder">No chart data available.</p>';
+function chartOptions(title, xLabel, yLabel) {
+    return {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { display: false },
+            title: {
+                display: true, text: title,
+                color: '#eef0f6', font: { size: 16, weight: '600' }, padding: { bottom: 16 }
+            },
+            tooltip: {
+                backgroundColor: '#141824',
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: 1,
+                titleColor: '#eef0f6',
+                bodyColor: '#9aa4b2',
+                padding: 10,
+            }
+        },
+        scales: {
+            x: {
+                ticks: { color: MUTED, maxRotation: 45, font: { size: 11 } },
+                grid: { color: BORDER },
+                title: { display: true, text: xLabel, color: MUTED, font: { size: 12 } }
+            },
+            y: {
+                ticks: { color: MUTED },
+                grid: { color: BORDER },
+                title: { display: true, text: yLabel, color: MUTED, font: { size: 12 } }
+            }
         }
-        return;
-    }
-
-    const ctx = canvas.getContext('2d');
-    const width = canvas.clientWidth || 420;
-    let height = canvas.height || 320;
-    canvas.width = width;
-    canvas.height = height;
-
-    const items = series;
-    const maxVal = Math.max(...items.map(item => item.value)) || 1;
-
-    ctx.clearRect(0, 0, width, height);
-
-    const padding = 16;
-    const labelWidth = 140;
-    const chartWidth = width - padding * 2 - labelWidth;
-    const barHeight = 18;
-    const gap = 12;
-    const requiredHeight = padding * 2 + items.length * (barHeight + gap);
-    if (requiredHeight > height) {
-        canvas.height = requiredHeight;
-        canvas.style.height = `${requiredHeight}px`;
-        height = canvas.height;
-    } else {
-        canvas.style.height = `${height}px`;
-    }
-
-    ctx.font = '12px "IBM Plex Sans", sans-serif';
-    ctx.fillStyle = '#9aa4b2';
-
-    items.forEach((item, idx) => {
-        const y = padding + idx * (barHeight + gap);
-        // Label on the left
-        const labelText = item.product_name.length > 18
-            ? `${item.product_name.slice(0, 18)}…`
-            : item.product_name;
-        ctx.fillText(labelText, padding, y + 13);
-
-        // Bar track (right side)
-        const barX = padding + labelWidth;
-        const barY = y;
-        const barLen = Math.max(6, (item.value / maxVal) * chartWidth);
-
-        // Track
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-        ctx.fillRect(barX, barY, chartWidth, barHeight);
-
-        // Fill from right to left
-        ctx.fillStyle = '#39ff88';
-        ctx.fillRect(barX + chartWidth - barLen, barY, barLen, barHeight);
-
-        // Value
-        ctx.fillStyle = '#9aa4b2';
-        ctx.fillText(Math.round(item.value).toLocaleString(), barX + chartWidth + 6, barY + 13);
-    });
+    };
 }
 
-function buildPriceSeriesFromProducts(products) {
-    if (!products || products.length === 0) return [];
-    const series = products
-        .filter(p => typeof p.price === 'number')
-        .map(p => ({ product_name: p.product_name, value: p.price }));
-    return series;
-}
-
-// Populate category dropdown
+// ===== PRODUCTS =====
 function populateCategoryFilter(items) {
-    const categoryFilter = document.getElementById('categoryFilter');
-    if (!categoryFilter) return;
-    const categories = Array.from(new Set(items.map(i => i.category).filter(Boolean))).sort();
-    categoryFilter.innerHTML = '<option value="all">All Categories</option>';
-    categories.forEach(cat => {
-        const opt = document.createElement('option');
-        opt.value = cat;
-        opt.innerText = cat;
-        categoryFilter.appendChild(opt);
-    });
+    const sel = document.getElementById('categoryFilter');
+    const cats = [...new Set(items.map(i => i.category).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="all">All</option>' +
+        cats.map(c => `<option value="${c}">${c}</option>`).join('');
 }
 
-// Render product table based on filters
 function renderProductTable() {
     const container = document.getElementById('productTable');
-    if (!container) return;
-    if (!productListFull || productListFull.length === 0) {
-        container.innerHTML = '<p class="placeholder">No product list available.</p>';
-        return;
-    }
+    if (!productListFull.length) { container.innerHTML = '<p class="placeholder">No product list available.</p>'; return; }
 
-    const searchValue = (document.getElementById('searchProduct')?.value || '').toLowerCase();
-    const categoryValue = document.getElementById('categoryFilter')?.value || 'all';
-    const sortValue = document.getElementById('sortFilter')?.value || 'name_asc';
+    const search   = (document.getElementById('searchProduct')?.value || '').toLowerCase();
+    const category = document.getElementById('categoryFilter')?.value || 'all';
+    const sort     = document.getElementById('sortFilter')?.value || 'name_asc';
 
     let filtered = productListFull.filter(item => {
-        const matchesSearch = item.product_name.toLowerCase().includes(searchValue);
-        const matchesCategory = categoryValue === 'all' || item.category === categoryValue;
-        return matchesSearch && matchesCategory;
+        const matchSearch = item.product_name.toLowerCase().includes(search);
+        const matchCat    = category === 'all' || item.category === category;
+        return matchSearch && matchCat;
     });
 
-    const getNumber = (v) => (typeof v === 'number' && !isNaN(v)) ? v : -Infinity;
-
+    const num = v => (typeof v === 'number' && !isNaN(v)) ? v : -Infinity;
     filtered.sort((a, b) => {
-        switch (sortValue) {
-            case 'price_high':
-                return getNumber(b.price) - getNumber(a.price);
-            case 'price_low':
-                return getNumber(a.price) - getNumber(b.price);
-            case 'rating_high':
-                return getNumber(b.rating) - getNumber(a.rating);
-            case 'rating_low':
-                return getNumber(a.rating) - getNumber(b.rating);
-            case 'discount_high':
-                return getNumber(b.discount_percentage) - getNumber(a.discount_percentage);
-            case 'discount_low':
-                return getNumber(a.discount_percentage) - getNumber(b.discount_percentage);
-            case 'sales_high':
-                return getNumber(b.sales) - getNumber(a.sales);
-            case 'sales_low':
-                return getNumber(a.sales) - getNumber(b.sales);
-            default:
-                return a.product_name.localeCompare(b.product_name);
+        switch (sort) {
+            case 'price_high':    return num(b.price) - num(a.price);
+            case 'price_low':     return num(a.price) - num(b.price);
+            case 'rating_high':   return num(b.rating) - num(a.rating);
+            case 'rating_low':    return num(a.rating) - num(b.rating);
+            case 'discount_high': return num(b.discount_percentage) - num(a.discount_percentage);
+            case 'discount_low':  return num(a.discount_percentage) - num(b.discount_percentage);
+            case 'sales_high':    return num(b.sales) - num(a.sales);
+            case 'sales_low':     return num(a.sales) - num(b.sales);
+            default:              return a.product_name.localeCompare(b.product_name);
         }
     });
 
-    const rows = filtered.map(item => {
-        const price = item.price !== undefined ? `₹${Math.round(item.price).toLocaleString()}` : 'N/A';
-        const rating = item.rating !== undefined && item.rating !== null ? item.rating.toFixed(1) : 'N/A';
-        const discount = item.discount_percentage !== undefined && item.discount_percentage !== null ? `${item.discount_percentage.toFixed(1)}%` : 'N/A';
-        const sales = item.sales !== undefined ? Math.round(item.sales).toLocaleString() : 'N/A';
-        const category = item.category || 'N/A';
-        return `
-            <tr>
-                <td><strong>${item.product_name}</strong></td>
-                <td>${category}</td>
-                <td>${price}</td>
-                <td>${rating}</td>
-                <td>${discount}</td>
-                <td>${sales}</td>
-            </tr>
-        `;
-    }).join('');
+    const rows = filtered.map(item => `
+        <tr>
+            <td><strong>${item.product_name}</strong></td>
+            <td>${item.category || 'N/A'}</td>
+            <td>${item.price !== undefined ? '₹' + Math.round(item.price).toLocaleString() : 'N/A'}</td>
+            <td>${item.rating != null ? item.rating.toFixed(1) : 'N/A'}</td>
+            <td>${item.discount_percentage != null ? item.discount_percentage.toFixed(1) + '%' : 'N/A'}</td>
+            <td>${item.sales !== undefined ? Math.round(item.sales).toLocaleString() : 'N/A'}</td>
+        </tr>`).join('');
 
     container.innerHTML = `
         <table>
-            <thead>
-                <tr>
-                    <th>Product</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>Rating</th>
-                    <th>Discount</th>
-                    <th>Sales</th>
-                </tr>
-            </thead>
+            <thead><tr>
+                <th>Product</th><th>Category</th><th>Price</th>
+                <th>Rating</th><th>Discount</th><th>Sales</th>
+            </tr></thead>
             <tbody>${rows}</tbody>
-        </table>
-    `;
+        </table>`;
 }
 
-// Send message to AI assistant
-async function sendMessage(message) {
-    const cleanMessage = (message || '').trim();
-    if (!cleanMessage) return;
+function renderProducts(ins) {
+    // Top selling
+    const topDiv = document.getElementById('topSelling');
+    if (ins.top_selling_products && ins.top_selling_products.length) {
+        const label = ins.sales_basis === 'review_count' ? 'Reviews' : 'Sales';
+        topDiv.innerHTML = '<ul>' +
+            ins.top_selling_products.slice(0,5)
+                .map(i => `<li><strong>${i.product_name}</strong>: ${Math.round(i.sales).toLocaleString()} ${label}</li>`)
+                .join('') + '</ul>';
+    } else { topDiv.innerHTML = '<p class="placeholder">Top sellers data unavailable</p>'; }
+}
 
-    // Add user message to chat
-    addMessageToChat(cleanMessage, 'user');
+// ===== MARKET BASKET =====
+function renderBasket(ins) {
+    const rulesDiv = document.getElementById('associationRules');
+    const rules = ins.association_rules || [];
+    const totalTx = ins.association_meta?.total_transactions || 0;
 
-    // Show typing indicator
-    const typingIndicator = addTypingIndicator();
+    if (rules.length) {
+        rulesDiv.innerHTML = rules.slice(0,8).map(rule => {
+            const suppPct = (rule.support * 100).toFixed(1);
+            const confA   = (rule.confidence_a_to_b * 100).toFixed(1);
+            return `<div class="bottle-card">
+                <div class="bottle-title">${rule.product_a} ↔ ${rule.product_b}</div>
+                <div class="bottle-content">When customers purchase <strong>${rule.product_a}</strong>, they also purchase <strong>${rule.product_b}</strong> in ${rule.count} out of ${totalTx} transactions. This happens <strong>${confA}%</strong> of the time.</div>
+                <div class="bottle-stats">Support: ${suppPct}% | Confidence: ${confA}%</div>
+            </div>`;
+        }).join('');
+    } else {
+        rulesDiv.innerHTML = '<p class="placeholder">No association data available. Ensure your data contains transaction/order IDs.</p>';
+    }
 
-    try {
-        const response = await fetch(`${API_URL}/ask`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ question: cleanMessage })
-        });
-
-        const data = await response.json();
-
-        // Remove typing indicator
-        typingIndicator.remove();
-
-        if (data.answer) {
-            addMessageToChat(data.answer, 'bot');
-        } else if (data.error) {
-            addMessageToChat(`❌ ${data.error}`, 'bot');
-        }
-    } catch (error) {
-        typingIndicator.remove();
-        addMessageToChat('❌ Error connecting to the server. Make sure the backend is running!', 'bot');
-        console.error('Error:', error);
+    const byProd = ins.association_by_product || {};
+    const byProdDiv = document.getElementById('basketByProduct');
+    const entries = Object.entries(byProd).slice(0,12);
+    if (entries.length) {
+        byProdDiv.innerHTML = entries.map(([product, items]) => {
+            if (!items.length) return '';
+            const top = items[0];
+            const allItems = items.slice(0,3).map(i => `${i.product} (${i.count}x)`).join(', ');
+            return `<div class="bottle-card">
+                <div class="bottle-title">${product}</div>
+                <div class="bottle-content"><strong>Often bought with:</strong> ${allItems}<br>
+                When customers buy <strong>${product}</strong>, they frequently also purchase <strong>${top.product}</strong>. This occurs in <strong>${top.count}</strong> transactions.</div>
+                <div class="bottle-stats">📦 ${items.length} complementary products identified</div>
+            </div>`;
+        }).join('');
+    } else {
+        byProdDiv.innerHTML = '<p class="placeholder">No product-level association data available.</p>';
     }
 }
 
-// Add message to chat
-function addMessageToChat(message, sender) {
-    const chatMessages = document.getElementById('chatMessages');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${sender}`;
-
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-
-    // Convert newlines to <br> tags
-    contentDiv.innerHTML = message.replace(/\n/g, '<br>');
-
-    messageDiv.appendChild(contentDiv);
-    chatMessages.appendChild(messageDiv);
-
-    // Scroll to bottom
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+// ===== AI MODEL =====
+function renderModel(ins) {
+    const el = document.getElementById('modelAccuracy');
+    const rm = ins.rating_model;
+    if (rm && rm.accuracy !== undefined) {
+        el.innerHTML = `
+            <strong>🤖 Rating Prediction Model</strong><br><br>
+            <strong>Model Performance Metrics:</strong><br>
+            • Accuracy (R² Score): ${rm.accuracy.toFixed(1)}%<br>
+            • RMSE: ${(rm.rmse || 0).toFixed(3)}<br>
+            • R²: ${(rm.r2 || 0).toFixed(3)}<br><br>
+            This model predicts product ratings based on price, discount, and category features.`;
+    } else {
+        el.textContent = '📊 Model ready for training (requires price, discount, and rating columns in your data)';
+    }
 }
 
-// Add typing indicator
-function addTypingIndicator() {
-    const chatMessages = document.getElementById('chatMessages');
-    const typingDiv = document.createElement('div');
-    typingDiv.className = 'message bot';
-    typingDiv.id = 'typingIndicator';
-
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-    contentDiv.innerHTML = '<div class="loading"></div> Thinking...';
-
-    typingDiv.appendChild(contentDiv);
-    chatMessages.appendChild(typingDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    return typingDiv;
+// ===== CHAT =====
+function renderQuickQuestions() {
+    const questions = [
+        'How many products?', 'Best performing category?', 'Average rating?',
+        'Highest revenue products?', 'Discount insights?', 'Price insights?',
+        'Products sold together?', 'What is market basket?'
+    ];
+    const container = document.getElementById('quickQuestions');
+    container.innerHTML = questions.map(q =>
+        `<button class="question-btn" onclick="sendMessage('${q.replace(/'/g, "\\'")}')">${q}</button>`
+    ).join('');
 }
 
-// Show status message
-function showStatus(message, type) {
-    const statusDiv = document.getElementById('uploadStatus');
-    statusDiv.className = `status-message ${type}`;
-    statusDiv.innerHTML = message;
+async function sendMessage(message) {
+    const msg = (message || '').trim();
+    if (!msg) return;
 
-    setTimeout(() => {
-        statusDiv.className = 'status-message';
-        statusDiv.innerHTML = '';
-    }, 5000);
-}
+    addChatMessage(msg, 'user');
+    const typing = addTypingIndicator();
 
-// Check backend health on page load
-async function checkBackendHealth() {
     try {
-        const response = await fetch(`${API_URL}/health`);
-        const data = await response.json();
-        console.log('Backend status:', data);
-    } catch (error) {
-        console.error('Backend not running:', error);
+        const res  = await fetch(`${API_URL}/ask`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: msg })
+        });
+        const data = await res.json();
+        typing.remove();
+        addChatMessage(data.answer || data.error || 'No response', 'bot');
+    } catch (err) {
+        typing.remove();
+        addChatMessage('❌ Error connecting to the server. Make sure the backend is running!', 'bot');
+    }
+}
+
+function addChatMessage(text, role) {
+    const box = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+    div.innerHTML = `<div class="message-content">${text.replace(/\n/g, '<br>')}</div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+function addTypingIndicator() {
+    const box = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'message bot';
+    div.id = 'typingIndicator';
+    div.innerHTML = `<div class="message-content"><span class="loading-dot"></span> Thinking...</div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+}
+
+document.getElementById('clearChatBtn').addEventListener('click', () => {
+    document.getElementById('chatMessages').innerHTML = `
+        <div class="message bot">
+            <div class="message-content">Chat cleared. Ask me anything about your data!</div>
+        </div>`;
+});
+
+// ===== FILTER EVENTS =====
+document.getElementById('searchProduct')?.addEventListener('input', renderProductTable);
+document.getElementById('categoryFilter')?.addEventListener('change', renderProductTable);
+document.getElementById('sortFilter')?.addEventListener('change', renderProductTable);
+
+// ===== STATUS =====
+function showStatus(msg, type) {
+    const el = document.getElementById('uploadStatus');
+    el.textContent = msg;
+    el.className = 'status-message' + (type ? ` ${type}` : '');
+}
+
+// ===== HEALTH CHECK =====
+async function checkHealth() {
+    const pill = document.getElementById('statusPill');
+    try {
+        const res = await fetch(`${API_URL}/health`);
+        await res.json();
+        pill.textContent = '● ACTIVE';
+        pill.classList.remove('offline');
+    } catch {
+        pill.textContent = '● OFFLINE';
+        pill.classList.add('offline');
         showStatus('⚠️ Backend server is not running. Please start the backend first!', 'error');
     }
 }
 
-// Render quick question buttons
-function renderQuickQuestions() {
-    const quickQuestions = [
-        'How many products do we have?',
-        'Which category performs best?',
-        'What is the average rating?',
-        'Which products generate highest revenue?',
-        'Tell me about discounts',
-        'Show me price insights',
-        'Which products are sold together?',
-        'What is market basket?',
-        'What is association rule?',
-        'What is a category?',
-        'What is discount percentage?',
-        'What is average price?',
-        'How do you calculate profit?',
-        'What is sales volume?',
-        'What is rating?',
-        'How do you decide top sellers?'
-    ];
-
-    const container = document.getElementById('quickQuestions');
-    if (!container) return;
-    container.innerHTML = '';
-    quickQuestions.forEach(q => {
-        const btn = document.createElement('button');
-        btn.className = 'question-btn';
-        btn.type = 'button';
-        btn.innerText = q;
-        btn.addEventListener('click', () => sendMessage(q));
-        container.appendChild(btn);
-    });
+// ===== HELPERS =====
+function truncate(str, n) { return str.length > n ? str.slice(0, n) + '…' : str; }
+function hexAlpha(hex, alpha) {
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${alpha})`;
 }
 
-// Initialize on page load
+// ===== INIT =====
 window.addEventListener('load', () => {
-    checkBackendHealth();
-    renderQuickQuestions();
-    document.getElementById('searchProduct')?.addEventListener('input', renderProductTable);
-    document.getElementById('categoryFilter')?.addEventListener('change', renderProductTable);
-    document.getElementById('sortFilter')?.addEventListener('change', renderProductTable);
-    document.getElementById('downloadPdf')?.addEventListener('click', downloadPdf);
-    const reportDate = document.getElementById('reportDate');
-    if (reportDate) {
-        reportDate.textContent = new Date().toLocaleDateString();
-    }
+    checkHealth();
+    document.getElementById('reportDate').textContent = new Date().toLocaleDateString();
 });
-
-function downloadPdf() {
-    window.print();
-}
