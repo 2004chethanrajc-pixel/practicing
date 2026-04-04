@@ -1400,7 +1400,7 @@ def main():
         elif page == "insights":
             render_insights(insights)
         elif page == "charts":
-            render_charts(insights)
+             render_charts(insights)
         elif page == "products":
             render_products(insights)
         elif page == "basket":
